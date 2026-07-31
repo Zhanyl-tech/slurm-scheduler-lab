@@ -23,6 +23,15 @@ backfill OFF                          backfill ON
   bounded slowdown    373.18            bounded slowdown     55.66
 ```
 
+Those are synthetic numbers. To get your own, point it at your real config and a
+30-day `sacct` trace — one command, no controller touched:
+
+```bash
+schedlab --slurm-conf /etc/slurm/slurm.conf --sacct trace.txt --nodes 64 --cpus 32 --gpus 4
+```
+
+Full recipe under [Point it at your own cluster](#point-it-at-your-own-cluster).
+
 ---
 
 ## What it models
@@ -142,6 +151,17 @@ The suite pins the behaviours worth trusting: the EASY reservation refuses jobs
 that would delay it, fairshare halves at exactly one share of usage, backfill
 beats no-backfill on a generated workload, capacity is never exceeded, and runs
 are deterministic across identical seeds.
+
+## The set
+
+Part of a set of tools covering the lifecycle of a GPU allocation. This one
+decides the policy; the others operate the cluster it runs on:
+
+- **slurm-scheduler-lab** — this repo. Scheduling policy, before it goes live.
+- **[gpu-reaper](https://github.com/Zhanyl-tech/gpu-reaper)** — wasted GPUs during a job.
+- **[ib-slurm-exporter](https://github.com/Zhanyl-tech/ib-slurm-exporter)** — fabric problems attributed to the job.
+- **[epilog-gpu-validator](https://github.com/Zhanyl-tech/epilog-gpu-validator)** — GPU hardware faults between jobs.
+- **[slinky-gitops](https://github.com/Zhanyl-tech/slinky-gitops)** — running the whole thing on Kubernetes.
 
 ## License
 
