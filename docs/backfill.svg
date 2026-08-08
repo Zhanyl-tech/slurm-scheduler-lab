@@ -1,0 +1,86 @@
+<svg width="1200" height="760" viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ttl dsc">
+<title id="ttl">EASY backfill: what may start early, and what may not</title>
+<desc id="dsc">A four node timeline showing running jobs, a reservation at shadow time for a high priority job, one low priority job backfilled into a gap, and one rejected because it would cross the reservation.</desc>
+
+<rect width="1200" height="760" fill="#1a1520"/>
+
+<rect width="1200" height="86" fill="#241c26"/>
+<rect width="6" height="86" fill="#f5b544"/>
+<text x="44" y="38" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="25" font-weight="700" fill="#e9eff5">EASY backfill &#8212; what may start early, and what may not</text>
+<text x="44" y="66" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="14.5" fill="#828c98">A lower-priority job may start out of order only if it provably cannot delay the reservation.</text>
+
+<text x="60" y="132" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="11.5" letter-spacing="1.3" font-weight="700" fill="#828c98">NODES</text>
+
+<line x1="200" y1="146" x2="200" y2="392" stroke="#2e2433" stroke-width="1.5"/>
+<line x1="200" y1="392" x2="1150" y2="392" stroke="#3a3040" stroke-width="1.5"/>
+
+<text x="60" y="184" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.5" fill="#adb8c4">node01</text>
+<text x="60" y="240" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.5" fill="#adb8c4">node02</text>
+<text x="60" y="296" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.5" fill="#adb8c4">node03</text>
+<text x="60" y="352" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.5" fill="#adb8c4">node04</text>
+
+<rect x="200" y="156" width="360" height="44" rx="6" fill="#58a6ff" opacity="0.75"/>
+<text x="380" y="184" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#0d1117" font-weight="600" text-anchor="middle">running</text>
+<rect x="200" y="212" width="200" height="44" rx="6" fill="#58a6ff" opacity="0.75"/>
+<text x="300" y="240" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#0d1117" font-weight="600" text-anchor="middle">running</text>
+<rect x="200" y="268" width="520" height="44" rx="6" fill="#58a6ff" opacity="0.75"/>
+<text x="460" y="296" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#0d1117" font-weight="600" text-anchor="middle">running &#8212; frees last, sets the shadow time</text>
+<rect x="200" y="324" width="140" height="44" rx="6" fill="#58a6ff" opacity="0.75"/>
+<text x="270" y="352" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#0d1117" font-weight="600" text-anchor="middle">running</text>
+
+<rect x="720" y="268" width="290" height="44" rx="6" fill="#f5b544" opacity="0.18" stroke="#f5b544" stroke-width="2" stroke-dasharray="7 4"/>
+<rect x="720" y="324" width="290" height="44" rx="6" fill="#f5b544" opacity="0.18" stroke="#f5b544" stroke-width="2" stroke-dasharray="7 4"/>
+<text x="865" y="301" font-family="ui-sans-serif,Arial,sans-serif" font-size="13.5" fill="#f5b544" font-weight="700" text-anchor="middle">RESERVED &#8212; job A (highest priority)</text>
+<text x="865" y="352" font-family="ui-sans-serif,Arial,sans-serif" font-size="12.5" fill="#f5b544" text-anchor="middle">needs 2 nodes, cannot fit before now</text>
+
+<rect x="360" y="324" width="280" height="44" rx="6" fill="#3fb950" opacity="0.85">
+<animate attributeName="opacity" values="0.85;0.42;0.85" dur="2.2s" repeatCount="indefinite"/>
+</rect>
+<text x="500" y="352" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#0d1117" font-weight="700" text-anchor="middle">job B backfilled</text>
+
+<rect x="420" y="212" width="400" height="44" rx="6" fill="#f85149" opacity="0.12" stroke="#f85149" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="620" y="240" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#f85149" font-weight="600" text-anchor="middle">job C rejected &#8212; would run past the reservation</text>
+<path d="M806,226 L820,240 M820,226 L806,240" stroke="#f85149" stroke-width="2.6" stroke-linecap="round" fill="none">
+<animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/>
+</path>
+
+<line x1="260" y1="146" x2="260" y2="400" stroke="#e9eff5" stroke-width="2"/>
+<text x="260" y="418" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#e9eff5" font-weight="700" text-anchor="middle">now</text>
+
+<line x1="720" y1="146" x2="720" y2="400" stroke="#f5b544" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="720" y="418" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#f5b544" font-weight="700" text-anchor="middle">shadow time</text>
+<text x="720" y="436" font-family="ui-sans-serif,Arial,sans-serif" font-size="11.5" fill="#828c98" text-anchor="middle">earliest job A can start</text>
+
+<line x1="260" y1="146" x2="260" y2="392" stroke="#58a6ff" stroke-width="2" opacity="0">
+<animate attributeName="x1" values="260;1140" dur="6s" repeatCount="indefinite"/>
+<animate attributeName="x2" values="260;1140" dur="6s" repeatCount="indefinite"/>
+<animate attributeName="opacity" values="0;0.5;0.5;0" keyTimes="0;0.05;0.9;1" dur="6s" repeatCount="indefinite"/>
+</line>
+
+<rect x="60" y="468" width="1090" height="1.5" fill="#2e2433"/>
+
+<text x="60" y="502" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="11.5" letter-spacing="1.4" font-weight="700" fill="#58a6ff">THE RULE, IN ONE LINE</text>
+<text x="60" y="530" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="16" fill="#e9eff5">Sort by priority. Start what fits. When a job does not fit, reserve it at its shadow time &#8212; then let</text>
+<text x="60" y="554" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="16" fill="#e9eff5">smaller jobs through only if they finish before it.</text>
+<text x="60" y="580" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="13.5" font-style="italic" fill="#828c98">Shadow time assumes every running job uses its full time limit. The scheduler never reads true runtime.</text>
+
+<rect x="60" y="606" width="530" height="126" rx="11" fill="#251d28" stroke="#3a3040" stroke-width="1.5"/>
+<text x="86" y="634" font-family="ui-sans-serif,Arial,sans-serif" font-size="12.5" letter-spacing="1.2" font-weight="700" fill="#828c98">BACKFILL OFF</text>
+<text x="86" y="666" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#adb8c4">cpu utilization</text>
+<rect x="240" y="654" width="180" height="14" rx="7" fill="#2e2433"/>
+<rect x="240" y="654" width="130" height="14" rx="7" fill="#828c98"/>
+<text x="436" y="666" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="#e9eff5">72.2 %</text>
+<text x="86" y="700" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#adb8c4">mean wait</text>
+<text x="436" y="700" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="#e9eff5">1913.0 min</text>
+
+<rect x="620" y="606" width="530" height="126" rx="11" fill="#251d28" stroke="#3fb950" stroke-width="1.5"/>
+<text x="646" y="634" font-family="ui-sans-serif,Arial,sans-serif" font-size="12.5" letter-spacing="1.2" font-weight="700" fill="#3fb950">BACKFILL ON</text>
+<text x="646" y="666" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#adb8c4">cpu utilization</text>
+<rect x="800" y="654" width="180" height="14" rx="7" fill="#2e2433"/>
+<rect x="800" y="654" width="150" height="14" rx="7" fill="#3fb950"/>
+<text x="996" y="666" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="#e9eff5">83.6 %</text>
+<text x="646" y="700" font-family="ui-sans-serif,Arial,sans-serif" font-size="13" fill="#adb8c4">mean wait</text>
+<text x="996" y="700" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="#3fb950">373.7 min</text>
+
+<text x="60" y="752" font-family="ui-sans-serif,Arial,sans-serif" font-size="11.5" fill="#5c5560">300 jobs / 16 nodes x 8 CPU / 2 GPU &#8212; synthetic trace, reproduced by: schedlab --compare-backfill</text>
+</svg>

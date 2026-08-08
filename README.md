@@ -36,6 +36,10 @@ Full recipe under [Point it at your own cluster](#point-it-at-your-own-cluster).
 
 ## What it models
 
+![Four node timeline showing a reservation at shadow time, one job backfilled into a gap, and one rejected for crossing the reservation](docs/backfill.svg)
+
+<sub>Job B starts ahead of higher-priority work because it provably finishes before the reservation. Job C does not, so it waits.</sub>
+
 **Multifactor priority** — the real formula from `priority/multifactor`:
 
 ```
