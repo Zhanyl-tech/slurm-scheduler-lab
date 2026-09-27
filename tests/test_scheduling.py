@@ -7,11 +7,13 @@ import pytest
 from schedlab.metrics import compute
 from schedlab.model import Cluster, Job, Node
 from schedlab.priority import (
+    MAX_PRIORITY,
     FairshareTree,
     PriorityWeights,
     _parse_duration,
     age_factor,
     compute_priority,
+    controller_priority,
     jobsize_factor,
 )
 from schedlab.simulate import Scheduler, simulate
@@ -74,8 +76,59 @@ def test_favor_small_inverts_jobsize_factor():
     assert jobsize_factor(big, cluster, favor_small=True) == pytest.approx(0.2)
 
 
+def test_jobsize_factor_averages_node_and_cpu_fractions_like_slurm():
+    """`set_priority_factors()` (priority_multifactor.c L2175-L2244):
+    `(min_nodes/node_count + cpu_cnt/cluster_cpus) / 2`, or for FavorSmall
+    `((node_count - min_nodes)/node_count + (cluster_cpus - cpu_cnt)/cluster_cpus) / 2`.
+    """
+    cluster = Cluster.homogeneous(count=26, cpus=64)  # 26 nodes, 1664 CPUs
+    gang = job(1, 0, 10, nodes=8, cpus_per_node=1)  # an S0 gang: 8 one-CPU pods
+    large = (8 / 26 + 8 / 1664) / 2
+    assert jobsize_factor(gang, cluster, favor_small=False) == pytest.approx(large)
+    assert large > 30 * (8 / 1664)  # the CPU fraction alone under-weighted it ~30x
+    small = ((26 - 8) / 26 + (1664 - 8) / 1664) / 2
+    assert jobsize_factor(gang, cluster, favor_small=True) == pytest.approx(small)
+    # A job asking for every node: the favor-small node term is 0, not negative.
+    every = job(2, 0, 10, nodes=26, cpus_per_node=1)
+    assert jobsize_factor(every, cluster, favor_small=True) == pytest.approx(
+        (1664 - 26) / 1664 / 2
+    )
+    # Whole-node jobs on a homogeneous cluster: both fractions are equal, so
+    # the factor is the CPU fraction, as before (the synthetic workload's case).
+    whole = job(3, 0, 10, nodes=4, cpus_per_node=64)
+    assert jobsize_factor(whole, cluster, favor_small=False) == pytest.approx(4 / 26)
+
+
+def test_priority_is_stored_as_slurms_integer():
+    """`_get_priority_internal()`: below 1 becomes 1, then `(uint32_t)` truncation."""
+    assert controller_priority(500.7) == 500
+    assert controller_priority(1.0) == 1
+    assert controller_priority(0.4) == 1
+    assert controller_priority(-10.0) == 1
+    assert controller_priority(float("nan")) == 1
+    assert controller_priority(1e12) == MAX_PRIORITY == 2**32 - 1
+
+
+@pytest.mark.parametrize("mode", ["easy", "conservative"])
+def test_near_equal_priorities_tie_and_fall_to_submit_time(mode):
+    """Sums of 500.2 (submitted first) and 500.7 are both stored as 500 in
+    Slurm, and `sort_job_queue2()` then orders by submit time: the earlier
+    job runs first. On float priorities the later one used to win."""
+    weights = PriorityWeights(age=0, fairshare=0, jobsize=0, partition=0, qos=1000)
+    blocker = job(1, 0, 100)
+    first = job(2, 1, 10, qos_factor=0.5002)
+    second = job(3, 2, 10, qos_factor=0.5007)
+    simulate(
+        [blocker, first, second], Cluster.homogeneous(1, 1), weights=weights, backfill_mode=mode
+    )
+    assert first.priority == second.priority == 500
+    assert first.start_time == 100.0
+    assert second.start_time == 110.0
+
+
 def test_fairshare_halves_at_exact_share_usage():
-    tree = FairshareTree(shares={"a": 1.0, "b": 1.0})
+    # The classic formula. Fair Tree, now the default as in Slurm, ranks instead.
+    tree = FairshareTree(shares={"a": 1.0, "b": 1.0}, algorithm="classic")
     tree.charge("a", 100)
     tree.charge("b", 100)
     # Each account uses exactly its half -> F = 2^-1 = 0.5
@@ -142,7 +195,9 @@ def test_shadow_time_is_when_enough_resources_free_up():
     running = [job(1, 0, 100, nodes=2), job(2, 0, 50, nodes=2)]
     for r in running:
         r.start_time = 0.0
-        cluster.allocate(r, cluster.find_nodes(r))
+        nodes = cluster.find_nodes(r)
+        assert nodes is not None
+        cluster.allocate(r, nodes)
 
     blocked = job(3, 0, 10, nodes=3)
     # Freeing job 2 (ends at 50) leaves 2 nodes — not enough. Job 1 also has to
@@ -160,12 +215,20 @@ def test_backfill_runs_a_short_job_that_fits_in_the_hole():
         job(3, submit=2, duration=10, nodes=1),    # fits the 1 free node, ends early
     ]
 
-    result = simulate(jobs, cluster, backfill=True)
+    # EASY decides on every event; the conservative default waits for the next
+    # bf_interval tick (see test_backfill_conservative.py).
+    result = simulate(jobs, cluster, backfill=True, backfill_mode="easy")
     filler = next(j for j in jobs if j.job_id == 3)
 
     assert 3 in result.backfilled_ids
     # It starts as soon as it arrives rather than waiting behind job 2.
     assert filler.start_time == pytest.approx(2.0)
+    # The report counts backfill from each run's own flag (RunRecord.backfilled),
+    # which EASY sets when a job jumps the reservation. Without it every EASY
+    # report read "backfilled jobs 0" and no test noticed.
+    assert filler.runs[0].backfilled
+    m = compute(result, cluster)
+    assert m.backfilled == m.backfill_starts == len(result.backfilled_ids) == 1
 
 
 def test_backfill_refuses_a_job_that_would_delay_the_reservation():
@@ -181,6 +244,7 @@ def test_backfill_refuses_a_job_that_would_delay_the_reservation():
     simulate(jobs, cluster, backfill=True)
     blocker, filler = jobs[1], jobs[2]
 
+    assert filler.start_time is not None
     assert filler.start_time >= 100.0, "long job must not steal the reservation"
     assert blocker.start_time == pytest.approx(100.0)
 
@@ -199,10 +263,11 @@ def test_backfill_plans_against_time_limit_not_true_runtime():
         job(3, 2, duration=50, nodes=1, time_limit=500),
     ]
 
-    simulate(honest, Cluster.homogeneous(4, 1), backfill=True)
-    simulate(padded, Cluster.homogeneous(4, 1), backfill=True)
+    simulate(honest, Cluster.homogeneous(4, 1), backfill=True, backfill_mode="easy")
+    simulate(padded, Cluster.homogeneous(4, 1), backfill=True, backfill_mode="easy")
 
     assert honest[2].start_time == pytest.approx(2.0)
+    assert padded[2].start_time is not None and honest[2].start_time is not None
     assert padded[2].start_time > honest[2].start_time
 
 
@@ -277,7 +342,7 @@ def test_cluster_capacity_is_never_exceeded():
 
 
 def test_simulation_is_deterministic():
-    def run() -> list[float]:
+    def run() -> list[float | None]:
         jobs = generate(WorkloadProfile(job_count=100), seed=42)
         simulate(jobs, Cluster.homogeneous(16, 8, 2), backfill=True)
         return [j.start_time for j in jobs]
@@ -298,6 +363,16 @@ def test_slurm_time_parsing():
 def test_tres_gpu_extraction():
     assert _tres_gpus("cpu=16,mem=64G,node=1,billing=16,gres/gpu=4") == 4
     assert _tres_gpus("cpu=16,mem=64G") == 0
+
+
+def test_synthetic_limits_are_whole_minutes_padded_from_the_runtime():
+    """Slurm stores a limit in minutes, rounding seconds up (`time_str2mins()`,
+    parse_time.c L841-L847); the generator used to hand the scheduler
+    fractional seconds no Slurm job can have. The padding is still
+    max(1.05, N(3, 1)) of the runtime before the rounding."""
+    jobs = generate(WorkloadProfile(job_count=500), seed=9)
+    for j in jobs:
+        assert j.time_limit % 60 == 0 and j.time_limit >= 1.05 * j.duration
 
 
 def test_sacct_round_trip(tmp_path):
